@@ -34,10 +34,10 @@ endif
 
 TOOLCHAIN_PATH := /opt/gcc-arm-11.2-2022.02-x86_64-aarch64-none-linux-gnu/bin
 CC := $(TOOLCHAIN_PATH)/aarch64-none-linux-gnu-gcc
-# MODULE_DEV_DIR := ${BUILD_OUTPUT_PATH}/../../../install
-# MODULE_RUNTIME_DIR := ${BUILD_OUTPUT_PATH}/../../../install
-MODULE_DEV_DIR := ${BUILD_OUTPUT_PATH}/../../../lib
-MODULE_RUNTIME_DIR := ${BUILD_OUTPUT_PATH}/../../../lib
+# MODULE_DEV_DIR := ${BUILD_OUTPUT_PATH}/../../../lib
+# MODULE_RUNTIME_DIR := ${BUILD_OUTPUT_PATH}/../../../lib
+MODULE_DEV_DIR := ${BUILD_OUTPUT_PATH}/../../../debian/usr/hobot/lib
+MODULE_RUNTIME_DIR := ${BUILD_OUTPUT_PATH}/../../../debian/usr/hobot/lib
 HB_PKG_LIBCAM_DEV_DEB := y
 
 
@@ -236,8 +236,8 @@ ifeq ($(suffix $(SO_TARGET)), .so) # so add link.
 		${MODULE_DEV_DIR}/sensor/$(notdir $(SO_NAME))
 else # a no link.
 	$(Q)echo INS DEV $(notdir $(SO_NAME))
-	$(Q)install -d ${MODULE_DEV_DIR}/usr/hobot/lib/sensor
-	$(Q)install $(SO_NAMEVER) ${MODULE_DEV_DIR}/usr/hobot/lib/sensor/$(SO_TARGET)
+	$(Q)install -d ${MODULE_DEV_DIR}/sensor
+	$(Q)install $(SO_NAMEVER) ${MODULE_DEV_DIR}/sensor/$(SO_TARGET)
 endif
 endif
 
