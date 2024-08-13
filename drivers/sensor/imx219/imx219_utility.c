@@ -160,7 +160,7 @@ static int sensor_deinit(sensor_info_t *sensor_info)
 	return ret;
 }
 
-#define AE_DBG
+//#define AE_DBG
 static int sensor_aexp_gain_control(hal_control_info_t *info, uint32_t mode, uint32_t *again, uint32_t *dgain, uint32_t gain_num)
 {
 #ifdef AE_DBG
@@ -213,9 +213,12 @@ static int sensor_aexp_line_control(hal_control_info_t *info, uint32_t mode, uin
 
         if (mode == NORMAL_M) {
 		uint32_t sline =  line[0];
-		if ( sline > 1004) {//1004
-			sline = 1004;
+		if ( sline > 1162) {//1004
+			sline = 1162;
 		}
+		if (sline < 1) {
+            sline = 1;
+        }
 
 		temp0 = (sline >> 8) & 0x0F;
 		vin_i2c_write8(info->bus_num, 16, info->sensor_addr, EXP_LINE0, temp0);
@@ -255,9 +258,11 @@ static int imx219_linear_data_init_1920x1080(sensor_info_t *sensor_info)
 
 	turning_data.sensor_data.active_width = 1920;
 	turning_data.sensor_data.active_height = 1080;
-
-	turning_data.sensor_data.lines_per_second = 33980;
-	turning_data.sensor_data.exposure_time_max = 1004;//1004
+	turning_data.sensor_data.conversion = 1;
+	turning_data.sensor_data.turning_type = 6;
+	turning_data.sensor_data.lines_per_second = 33480;
+	turning_data.sensor_data.exposure_time_max = 1162;//1004
+	turning_data.sensor_data.exposure_time_long_max=1162;
 	turning_data.sensor_data.exposure_time_min = 1;
 	turning_data.sensor_data.analog_gain_max = 109;//255
 	turning_data.sensor_data.digital_gain_max = 0;
@@ -269,7 +274,7 @@ static int imx219_linear_data_init_1920x1080(sensor_info_t *sensor_info)
 
 	turning_data.normal.line_p.ratio = 256;
 	turning_data.normal.line_p.offset = 0;
-	turning_data.normal.line_p.max = 1004;
+	turning_data.normal.line_p.max = 1166;
 
 	turning_data.normal.again_control_num = 1;
 	turning_data.normal.again_control[0] = IMX219_GAIN;
