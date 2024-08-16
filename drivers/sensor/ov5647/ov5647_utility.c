@@ -192,12 +192,12 @@ void ov5647_normal_data_init(sensor_info_t *sensor_info, sensor_turning_data_t *
         int vts_hi = hb_vin_i2c_read_reg16_data8(sensor_info->bus_num, sensor_info->sensor_addr, OV5647_VTS_HI);
         int vts_lo = hb_vin_i2c_read_reg16_data8(sensor_info->bus_num, sensor_info->sensor_addr, OV5647_VTS_LO);
         uint32_t vts = vts_hi;
-        vts = vts << 8 | vts_lo;
-        pr_err("vts_hi:0x%x,vts_lo:0x%x,vts:0x%x\n", vts_hi,vts_lo, vts);
-        turning_data->sensor_data.lines_per_second = vts * sensor_info->fps; // TBC
-        // turning_data.sensor_data.lines_per_second = 33120;      // TBC
-        turning_data->sensor_data.exposure_time_max = vts;              // TBC
-        turning_data->sensor_data.exposure_time_long_max = vts; // TBC
+        vts = vts << 8 | vts_lo;//0x04 0x50 = 1104
+        pr_debug("vts_hi:0x%x,vts_lo:0x%x,vts:0x%x\n", vts_hi,vts_lo, vts);
+        turning_data->sensor_data.lines_per_second = vts * sensor_info->fps;
+        // turning_data.sensor_data.lines_per_second = 33120;
+        turning_data->sensor_data.exposure_time_max = vts;//993
+        turning_data->sensor_data.exposure_time_long_max = vts;//993
 }
 
 // turning data init
@@ -215,21 +215,21 @@ static int ov5647_linear_data_init(sensor_info_t *sensor_info)
         ov5647_common_data_init(sensor_info, &turning_data);
         ov5647_normal_data_init(sensor_info, &turning_data);
 
-        sensor_data_bayer_fill(&turning_data.sensor_data, 10, (uint32_t)BAYER_START_R, (uint32_t)BAYER_PATTERN_RGGB);
+        sensor_data_bayer_fill(&turning_data.sensor_data, 10, (uint32_t)BAYER_START_B, (uint32_t)BAYER_PATTERN_RGGB);
         sensor_data_bits_fill(&turning_data.sensor_data, 12);
 
-        turning_data.sensor_data.gain_max = 128 * 8192;            // TBC
-        turning_data.sensor_data.analog_gain_max = 128 * 8192; // TBC
+        // turning_data.sensor_data.gain_max = 128 * 8192;            // TBC
+        turning_data.sensor_data.analog_gain_max = 159 ; // TBC 159 32gain
         turning_data.sensor_data.digital_gain_max = 0;
-        turning_data.sensor_data.exposure_time_min = 1;
+        turning_data.sensor_data.exposure_time_min = 2;
 
 
-        turning_data.normal.s_line_length = 0;
-        // aGain
-        turning_data.normal.again_control_num = 0;
+        // turning_data.normal.s_line_length = 0;
+        // // aGain
+        // turning_data.normal.again_control_num = 0;
 
-        // dGain ,ov5647 don't have dgain register
-        turning_data.normal.dgain_control_num = 0;
+        // // dGain ,ov5647 don't have dgain register
+        // turning_data.normal.dgain_control_num = 0;
 
         // setting stream ctrl
         turning_data.stream_ctrl.data_length = 1;
@@ -279,7 +279,7 @@ static int sensor_aexp_line_control(hal_control_info_t *info, uint32_t mode, uin
         int sensor_addr = info->sensor_addr;
         char temp = 0, temp1 = 0, temp2 = 0;
         uint32_t sline = line[0];
-        const uint32_t max_lines = MAX_EXPO;
+        const uint32_t max_lines = MAX_EXPO;//1100
         if (sline > max_lines) {
                 sline = max_lines;
         }
@@ -302,7 +302,7 @@ static int sensor_aexp_gain_control(hal_control_info_t *info, uint32_t mode, uin
         int sensor_addr = info->sensor_addr;
         char hi = 0, lo = 0;
         uint32_t Again = again[0];
-        if (Again > 255)
+        if (Again > 160)
                 return -1;
         int ret = 0;
         hi = (ov5647_gain_lut[Again] >> 8) & 0x03;
