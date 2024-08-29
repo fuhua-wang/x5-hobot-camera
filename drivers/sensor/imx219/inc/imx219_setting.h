@@ -237,7 +237,6 @@ static uint32_t imx219_init_1920x1080_linear_setting[] = {
         0x4793, 0x10,
         0x4797, 0x0e,
         0x479b, 0x0e,
-		0x0100, 0x01,
 };
 
 #ifdef __cplusplus
