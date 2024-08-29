@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bash
 CUR_TEST_SHELL=$(readlink -f $0)
 COMMON_DIR=$(pwd)
 case_list=()
@@ -14,19 +14,11 @@ function print_usage() {
 	echo "run_tuning.sh --list: list all case"
 	echo "run_tuning.sh --run [case_index]: run this case"
 	echo "run_tuning.sh --vpm [case_index]: edit this case's vpm json"
-	echo "run_tuning.sh --tune 1: open tuning_server"
+	echo "run_tuning.sh --cam [case_index]: edit this case's cam json"
+	echo "run_tuning.sh --tune 0/1: close/open tuning_server"
+	echo "run with [-w 2]: dump 20 yuv from the start"
+	echo "run with [-r 1]: send raw to hbplayer"
 	exit 1
-}
-
-function get_first_raw_file() {
-	local _files=( $(find . -maxdepth 1 -type f -name "*.raw") )
-
-	if [ ${#_files[@]} -gt 0 ]; then
-		first_file="${_files[0]:2}"
-	else
-		echo "No raw file find in current work path"
-		exit 1
-	fi
 }
 
 function get_case_list() {
@@ -48,7 +40,7 @@ function get_case() {
 	fi
 
 	if [ "$1" -ge ${#case_list[@]} ]; then
-		ehco "index $1 not support"
+		echo "index $1 not support"
 		exit -1
 	fi
 
@@ -57,43 +49,54 @@ function get_case() {
 
 function suit_case_run() {
 	get_case "$@"
+	shift 1
 
 	local vpm_json_path=${TUNING_CFG_PATH}/${run_case}/${VPM_JSON_NAME}
 	local cam_json_path=${TUNING_CFG_PATH}/${run_case}/${CAM_JSON_NAME}
 
 	if test "$run_case" == "imx219_rx2"; then
 		echo "Run $run_case"
-		${COMMON_DIR}/isp_tuning -v "${vpm_json_path}" -c "${cam_json_path}"
-
+		${COMMON_DIR}/isp_tuning -v "${vpm_json_path}" -c "${cam_json_path}" "$@"
+	
 	elif test "$run_case" == "ov5647_rx2"; then
 		echo "Run $run_case"
-		${COMMON_DIR}/isp_tuning -v "${vpm_json_path}" -c "${cam_json_path}"
+		${COMMON_DIR}/isp_tuning -v "${vpm_json_path}" -c "${cam_json_path}" "$@"
 
 	elif test "$run_case" == "gc4663_rx2"; then
 		echo "Run $run_case"
-		${COMMON_DIR}/isp_tuning -v "${vpm_json_path}" -c "${cam_json_path}"
+		${COMMON_DIR}/isp_tuning -v "${vpm_json_path}" -c "${cam_json_path}" "$@"
 
 	elif test "$run_case" == "imx477_rx2"; then
 		echo "Run $run_case"
-		${COMMON_DIR}/isp_tuning -v "${vpm_json_path}" -c "${cam_json_path}"
+		${COMMON_DIR}/isp_tuning -v "${vpm_json_path}" -c "${cam_json_path}" "$@"
 
 	elif test "$run_case" == "feedback_case"; then
 		echo "Run $run_case"
 		echo "Notice: this script just support feedback 1080p raw now!!"
-		get_first_raw_file
-		${COMMON_DIR}/isp_tuning -v "${vpm_json_path}" -f "${COMMON_DIR}/${first_file}" -c "${cam_json_path}"
+		${COMMON_DIR}/isp_tuning -v "${vpm_json_path}" -c "${cam_json_path}" -w 1 "$@"
 
 	fi
 }
 
-function open_case_json() {
+function open_case_vpm_json() {
 	get_case "$@"
-
 	local vpm_json_path=${TUNING_CFG_PATH}/${run_case}/${VPM_JSON_NAME}
+
 	if [ -f ${vpm_json_path} ]; then
 		vi ${vpm_json_path}
 	else
 		echo "file ${vpm_json_path} not exist"
+	fi
+}
+
+function open_case_cam_json() {
+	get_case "$@"
+	local cam_json_path=${TUNING_CFG_PATH}/${run_case}/${CAM_JSON_NAME}
+
+	if [ -f ${cam_json_path} ]; then
+		vi ${cam_json_path}
+	else
+		echo "file ${cam_json_path} not exist"
 	fi
 }
 
@@ -108,11 +111,11 @@ function vtuner_control() {
 		echo "Open vtuner_server Success! Please connect VtunerClient"
 
 	elif [ "$1" == "0" ]; then
-		echo "Cannot support close vtuner_server"
-		exit -1
+		echo 0 > /sys/kernel/debug/isp/tune
+		echo "Close vtuner_server done!"
 
 	else
-		echo "Please input --tune 1 to open the vtuner_server."
+		echo "Please input --tune 0/1 to close/open the vtuner_server."
 		exit -1
 	fi
 }
@@ -132,7 +135,10 @@ function specify_command() {
 		suit_case_run "$@"
 
 	elif [ "$_command" == "--vpm" ]; then
-		open_case_json "$@"
+		open_case_vpm_json "$@"
+
+	elif [ "$_command" == "--cam" ]; then
+		open_case_cam_json "$@"
 
 	elif [ "$_command" == "--help" ]; then
 		print_usage
