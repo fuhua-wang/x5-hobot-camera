@@ -1,6 +1,5 @@
 #!/bin/bash
 
-echo "run ldconfig"
 ldconfig
 exit 0
 
