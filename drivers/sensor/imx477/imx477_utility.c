@@ -222,28 +222,13 @@ static int imx477_linear_data_init_1920x1080(sensor_info_t *sensor_info)
 	turning_data.sensor_data.active_height = 1080;
 
 	turning_data.sensor_data.lines_per_second = 65650;
-	turning_data.sensor_data.exposure_time_max = 2166;
+	turning_data.sensor_data.exposure_time_max = 1313;
 	turning_data.sensor_data.exposure_time_min = 1;
 	turning_data.sensor_data.analog_gain_max = 255;
 	turning_data.sensor_data.digital_gain_max = 0;
 
-	turning_data.normal.s_line = IMX477_EXP_REG_ADDR_HI;
-	turning_data.normal.s_line_length = 2;
-
-	turning_data.normal.line_p.ratio = 256;
-	turning_data.normal.line_p.offset = 0;
-	turning_data.normal.line_p.max = 2166;
-
-	turning_data.normal.again_control_num = 0;
-	turning_data.normal.again_control[0] = 0;
-	turning_data.normal.again_control_length[0] = 0;
-
-	turning_data.normal.dgain_control_num = 0;
-	turning_data.normal.dgain_control[0] = IMX477_DGAIN_REG_ADDR;
-	turning_data.normal.dgain_control_length[0] = 0;
-
 	//sensor bit && bayer
-	sensor_data_bayer_fill(&turning_data.sensor_data, 12, (uint32_t)BAYER_START_B, (uint32_t)BAYER_PATTERN_RGGB);
+	sensor_data_bayer_fill(&turning_data.sensor_data, 12, (uint32_t)BAYER_START_R, (uint32_t)BAYER_PATTERN_RGGB);
 	// sensor exposure_max_bit, maybe not used ?  //FIXME
 	sensor_data_bits_fill(&turning_data.sensor_data, 12);
 
@@ -312,23 +297,8 @@ static int imx477_linear_data_init_3000x4000(sensor_info_t *sensor_info)
 	turning_data.sensor_data.lines_per_second = 25840;
 	turning_data.sensor_data.exposure_time_max = 852;
 	turning_data.sensor_data.exposure_time_min = 1;
-	turning_data.sensor_data.analog_gain_max = 255;
+	turning_data.sensor_data.analog_gain_max = 143;
 	turning_data.sensor_data.digital_gain_max = 0;
-
-	turning_data.normal.s_line = IMX477_EXP_REG_ADDR_HI;
-	turning_data.normal.s_line_length = 2;
-
-	turning_data.normal.line_p.ratio = 256;
-	turning_data.normal.line_p.offset = 0;
-	turning_data.normal.line_p.max = 852;
-
-	turning_data.normal.again_control_num = 0;
-	turning_data.normal.again_control[0] = 0;
-	turning_data.normal.again_control_length[0] = 0;
-
-	turning_data.normal.dgain_control_num = 0;
-	turning_data.normal.dgain_control[0] = IMX477_DGAIN_REG_ADDR;
-	turning_data.normal.dgain_control_length[0] = 0;
 
 	//sensor bit && bayer
 	sensor_data_bayer_fill(&turning_data.sensor_data, 12, (uint32_t)BAYER_START_B, (uint32_t)BAYER_PATTERN_RGGB);
@@ -418,18 +388,18 @@ static int sensor_aexp_line_control(hal_control_info_t *info, uint32_t mode, uin
         printf("line mode %d, --line %d , line_num:%d \n", mode, line[0], line_num);
 #endif
     const uint16_t EXP_LINE0 = 0x0202;
-	const uint16_t EXP_LINE1 = 0x015B;
+	const uint16_t EXP_LINE1 = 0x0203;
 	char temp0 = 0, temp1 = 0;
 
         if (mode == NORMAL_M) {
 		uint32_t sline =  line[0];
-		if ( sline > 1166) {//1166
-			sline = 1166;
+		if ( sline > 1313) {//1166
+			sline = 1313;
 		}
 
-		temp0 = (sline >> 4) & 0x0F;
+		temp0 = (sline >> 8) & 0xFF;
 		vin_i2c_write8(info->bus_num, 16, info->sensor_addr, EXP_LINE0, temp0);
-		temp1 = (sline) & 0x0F;
+		temp1 = (sline) & 0xFF;
         vin_i2c_write8(info->bus_num, 16, info->sensor_addr, EXP_LINE1, temp1);
 #ifdef AE_DBG
         printf("write sline = %d, 0x015A = 0x%x, 0x015B = 0x%x\n",
@@ -446,8 +416,8 @@ static int sensor_aexp_line_control(hal_control_info_t *info, uint32_t mode, uin
 static int sensor_userspace_control(uint32_t port, uint32_t *enable)
 {
 	vin_info("enable userspace gain control and line control\n");
-	*enable = 0;	//imx477 use kernel space gain contrl and line control
-	// *enable = HAL_GAIN_CONTROL | HAL_LINE_CONTROL;
+	// *enable = 0;	//imx477 use kernel space gain contrl and line control
+	*enable = HAL_GAIN_CONTROL | HAL_LINE_CONTROL;
 	return 0;
 }
 
