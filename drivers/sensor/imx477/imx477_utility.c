@@ -344,7 +344,6 @@ static int imx477_linear_data_init_3000x4000(sensor_info_t *sensor_info)
 	return ret;
 }
 
-#define AE_DBG
 static int sensor_aexp_gain_control(hal_control_info_t *info, uint32_t mode, uint32_t *again, uint32_t *dgain, uint32_t gain_num)
 {
 #ifdef AE_DBG
@@ -402,7 +401,7 @@ static int sensor_aexp_line_control(hal_control_info_t *info, uint32_t mode, uin
 		temp1 = (sline) & 0xFF;
         vin_i2c_write8(info->bus_num, 16, info->sensor_addr, EXP_LINE1, temp1);
 #ifdef AE_DBG
-        printf("write sline = %d, 0x015A = 0x%x, 0x015B = 0x%x\n",
+        printf("write sline = %d, 0x0202 = 0x%x, 0x0203 = 0x%x\n",
                         sline, temp0, temp1);
 #endif
         } else {
