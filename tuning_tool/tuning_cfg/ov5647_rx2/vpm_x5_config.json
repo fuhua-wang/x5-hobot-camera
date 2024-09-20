@@ -19,7 +19,7 @@
 						"vc_index": 0,
 						"rx_index": 2,
 						"channels": 1,
-						"vin_attr_ex_mask": "0x80",
+						"vin_attr_ex_mask": "0x00",
 						"mclk_freq": 24000000,
 						"function": {
 							"enable_frame_id": 0,
