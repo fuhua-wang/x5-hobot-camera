@@ -25,6 +25,7 @@
 #define REG_WIDTH	2	//reg16 data8
 
 static int imx219_linear_data_init_1920x1080(sensor_info_t *sensor_info);
+static int imx219_linear_data_init_3264x2464(sensor_info_t *sensor_info);
 
 static int sensor_poweroff(sensor_info_t *sensor_info)
 {
@@ -87,7 +88,7 @@ static int sensor_init(sensor_info_t *sensor_info)
 			vin_info("imx219 in normal/linear mode\n");
 			vin_info("bus_num = %d, sensor_addr = 0x%0x, fps = %d\n",
 				sensor_info->bus_num, sensor_info->sensor_addr, sensor_info->fps);
-			if (sensor_info->fps == 30) {
+			if (sensor_info->resolution == 1080) {
 				setting_size = sizeof(imx219_init_1920x1080_linear_setting) / sizeof(uint32_t) / 2;
 				ret = vin_write_array(sensor_info->bus_num, sensor_info->sensor_addr, REG_WIDTH,
 					setting_size, imx219_init_1920x1080_linear_setting);
@@ -100,7 +101,21 @@ static int sensor_init(sensor_info_t *sensor_info)
 					vin_err("%d : linear data init %s fail\n", __LINE__, sensor_info->sensor_name);
 					return -HB_CAM_INIT_FAIL;
 				}
-			} 
+			}
+			if (sensor_info->resolution == 2464) {
+				setting_size = sizeof(imx219_init_3264x2464_linear_setting) / sizeof(uint32_t) / 2;
+				ret = vin_write_array(sensor_info->bus_num, sensor_info->sensor_addr, REG_WIDTH,
+					setting_size, imx219_init_3264x2464_linear_setting);
+				if (ret < 0) {
+					vin_err("%d : init %s fail\n", __LINE__, sensor_info->sensor_name);
+					return -HB_CAM_I2C_WRITE_FAIL;
+				}
+				ret = imx219_linear_data_init_3264x2464(sensor_info);
+				if (ret < 0) {
+					vin_err("%d : linear data init %s fail\n", __LINE__, sensor_info->sensor_name);
+					return -HB_CAM_INIT_FAIL;
+				}
+			}
 			break;
 		default:
 			vin_err("not support mode %d\n", sensor_info->sensor_mode);
@@ -283,6 +298,81 @@ static int imx219_linear_data_init_1920x1080(sensor_info_t *sensor_info)
 	turning_data.normal.dgain_control_num = 0;
 	turning_data.normal.dgain_control[0] = 0;
 	turning_data.normal.dgain_control_length[0] = 0;
+
+	//sensor bit && bayer
+	sensor_data_bayer_fill(&turning_data.sensor_data, 10, (uint32_t)BAYER_START_R, (uint32_t)BAYER_PATTERN_RGGB);
+	// sensor exposure_max_bit, maybe not used ?  //FIXME
+	sensor_data_bits_fill(&turning_data.sensor_data, 12);
+
+	//some stress test case, we need kernel stream_ctrl.
+	turning_data.stream_ctrl.data_length = 1;
+
+	if(sizeof(turning_data.stream_ctrl.stream_on) >= sizeof(imx219_stream_on_setting)) {
+		memcpy(stream_on, imx219_stream_on_setting, sizeof(imx219_stream_on_setting));
+	} else {
+		vin_err("Number of registers on stream over 10\n");
+		return -RET_ERROR;
+	}
+	if(sizeof(turning_data.stream_ctrl.stream_off) >= sizeof(imx219_stream_off_setting)) {
+		memcpy(stream_off, imx219_stream_off_setting, sizeof(imx219_stream_off_setting));
+	} else {
+		vin_err("Number of registers on stream over 10\n");
+		return -RET_ERROR;
+	}
+
+	// sync gain lut to kernel driver.
+	turning_data.normal.again_lut = malloc(256 * sizeof(uint32_t));
+	if (turning_data.normal.again_lut != NULL) {
+		memset(turning_data.normal.again_lut, 0xff, 256 * sizeof(uint32_t));
+		memcpy(turning_data.normal.again_lut, imx219_gain_lut,
+			sizeof(imx219_gain_lut));
+	}
+
+	ret = ioctl(sensor_info->sen_devfd, SENSOR_TURNING_PARAM, &turning_data);
+
+	if (turning_data.normal.again_lut) {
+		free(turning_data.normal.again_lut);
+		turning_data.normal.again_lut = NULL;
+	}
+
+	if (ret < 0) {
+		vin_err("%s sync gain lut ioctl fail %d\n", sensor_info->sensor_name, ret);
+		return -RET_ERROR;
+	}
+
+	return ret;
+}
+
+static int imx219_linear_data_init_3264x2464(sensor_info_t *sensor_info)
+{
+	int ret = RET_OK;
+	uint32_t  open_cnt = 0;
+	sensor_turning_data_t turning_data;
+	uint32_t *stream_on = turning_data.stream_ctrl.stream_on;
+	uint32_t *stream_off = turning_data.stream_ctrl.stream_off;
+
+	memset(&turning_data, 0, sizeof(sensor_turning_data_t));
+
+	// common data
+	turning_data.bus_num = sensor_info->bus_num;
+	turning_data.bus_type = sensor_info->bus_type;
+	turning_data.port = sensor_info->port;
+	turning_data.reg_width = sensor_info->reg_width;
+	turning_data.mode = sensor_info->sensor_mode;
+	turning_data.sensor_addr = sensor_info->sensor_addr;
+	strncpy(turning_data.sensor_name, sensor_info->sensor_name,
+		sizeof(turning_data.sensor_name));
+
+	turning_data.sensor_data.active_width = 3264;
+	turning_data.sensor_data.active_height = 2464;
+	turning_data.sensor_data.conversion = 1;
+	turning_data.sensor_data.turning_type = 6;
+	turning_data.sensor_data.lines_per_second = 33480;
+	turning_data.sensor_data.exposure_time_max = 1162;//1004
+	turning_data.sensor_data.exposure_time_long_max=1162;
+	turning_data.sensor_data.exposure_time_min = 1;
+	turning_data.sensor_data.analog_gain_max = 109;//255
+	turning_data.sensor_data.digital_gain_max = 0;
 
 	//sensor bit && bayer
 	sensor_data_bayer_fill(&turning_data.sensor_data, 10, (uint32_t)BAYER_START_R, (uint32_t)BAYER_PATTERN_RGGB);
