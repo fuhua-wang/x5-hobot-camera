@@ -28,9 +28,7 @@
 #define IMX477_AGAIN_REG_ADDR_LO 0x0205
 #define IMX477_DGAIN_REG_ADDR 0x020e
 #define MCLK (24000000)
-
-static int imx477_linear_data_init_1920x1080(sensor_info_t *sensor_info);
-static int imx477_linear_data_init_3000x4000(sensor_info_t *sensor_info);
+static int imx477_linear_data_init(sensor_info_t *sensor_info);
 
 #define REG_WIDTH	2	//reg16 data8
 
@@ -109,42 +107,45 @@ int sensor_init(sensor_info_t *sensor_info)
 	}
 
 	if (sensor_info->width == 1920 && sensor_info->height == 1080) {
-		switch(sensor_info->sensor_mode) {
-		case NORMAL_M:	  // 1: normal
-			vin_info("imx477 in normal mode\n");
-			setting_size = sizeof(imx477_1080p_50fps_setting) / sizeof(uint32_t) / 2;
-			ret = vin_write_array(sensor_info->bus_num, sensor_info->sensor_addr, REG_WIDTH,
-				setting_size, imx477_1080p_50fps_setting);
-			ret = imx477_linear_data_init_1920x1080(sensor_info);
-			if (ret < 0) {
-				vin_err("%d : linear data init %s fail\n", __LINE__, sensor_info->sensor_name);
-				return ret;
-			}
-			break;
-		default:
-			vin_err("not support mode %d\n", sensor_info->sensor_mode);
-			ret = -RET_ERROR;
-			break;
-		}
-	}else if (sensor_info->width == 4000 && sensor_info->height == 3000) {
-		switch(sensor_info->sensor_mode) {
-		case NORMAL_M:	  // 1: normal
-			vin_info("imx477 in normal mode\n");
-			setting_size = sizeof(imx477_3000p_10fps_setting) / sizeof(uint32_t) / 2;
-			ret = vin_write_array(sensor_info->bus_num, sensor_info->sensor_addr, REG_WIDTH,
-				setting_size, imx477_3000p_10fps_setting);
-			ret = imx477_linear_data_init_3000x4000(sensor_info);
-			if (ret < 0) {
-				vin_err("%d : linear data init %s fail\n", __LINE__, sensor_info->sensor_name);
-				return ret;
-			}
-			break;
-		default:
-			vin_err("not support mode %d\n", sensor_info->sensor_mode);
-			ret = -RET_ERROR;
-			break;
+		setting_size = sizeof(imx477_1080p_50fps_setting) / sizeof(uint32_t) / 2;
+		ret = vin_write_array(sensor_info->bus_num, sensor_info->sensor_addr, REG_WIDTH,
+			setting_size, imx477_1080p_50fps_setting);
+		ret = imx477_linear_data_init(sensor_info);
+		if (ret < 0) {
+			vin_err("%d : linear data init %s fail\n", __LINE__, sensor_info->sensor_name);
+			return ret;
 		}
 	} 
+	if (sensor_info->width == 4000 && sensor_info->height == 3000) {
+		setting_size = sizeof(imx477_3000p_10fps_setting) / sizeof(uint32_t) / 2;
+		ret = vin_write_array(sensor_info->bus_num, sensor_info->sensor_addr, REG_WIDTH,
+			setting_size, imx477_3000p_10fps_setting);
+		ret = imx477_linear_data_init(sensor_info);
+		if (ret < 0) {
+			vin_err("%d : linear data init %s fail\n", __LINE__, sensor_info->sensor_name);
+			return ret;
+		}
+	}
+	if (sensor_info->width == 1280 && sensor_info->height == 960) {
+		setting_size = sizeof(imx477_990p_10fps_setting) / sizeof(uint32_t) / 2;
+		ret = vin_write_array(sensor_info->bus_num, sensor_info->sensor_addr, REG_WIDTH,
+			setting_size, imx477_990p_10fps_setting);
+		ret = imx477_linear_data_init(sensor_info);
+		if (ret < 0) {
+			vin_err("%d : linear data init %s fail\n", __LINE__, sensor_info->sensor_name);
+			return ret;
+		}
+	}
+	if (sensor_info->width == 2016 && sensor_info->height == 1520) {
+		setting_size = sizeof(imx477_1520p_10fps_setting) / sizeof(uint32_t) / 2;
+		ret = vin_write_array(sensor_info->bus_num, sensor_info->sensor_addr, REG_WIDTH,
+			setting_size, imx477_1520p_10fps_setting);
+		ret = imx477_linear_data_init(sensor_info);
+		if (ret < 0) {
+			vin_err("%d : linear data init %s fail\n", __LINE__, sensor_info->sensor_name);
+			return ret;
+		}
+	}	
 	vin_info("imx477 config success under %d mode\n\n", sensor_info->sensor_mode);
 
 	return ret;
@@ -198,7 +199,7 @@ static int sensor_deinit(sensor_info_t *sensor_info)
 	return ret;
 }
 
-static int imx477_linear_data_init_1920x1080(sensor_info_t *sensor_info)
+static int imx477_linear_data_init(sensor_info_t *sensor_info)
 {
 	int ret = RET_OK;
 	uint32_t  open_cnt = 0;
@@ -208,24 +209,8 @@ static int imx477_linear_data_init_1920x1080(sensor_info_t *sensor_info)
 
 	memset(&turning_data, 0, sizeof(sensor_turning_data_t));
 
-	// common data
-	turning_data.bus_num = sensor_info->bus_num;
-	turning_data.bus_type = sensor_info->bus_type;
-	turning_data.port = sensor_info->port;
-	turning_data.reg_width = sensor_info->reg_width;
-	turning_data.mode = sensor_info->sensor_mode;
-	turning_data.sensor_addr = sensor_info->sensor_addr;
-	strncpy(turning_data.sensor_name, sensor_info->sensor_name,
-		sizeof(turning_data.sensor_name));
-
-	turning_data.sensor_data.active_width = 1920;
-	turning_data.sensor_data.active_height = 1080;
-
-	turning_data.sensor_data.lines_per_second = 65650;
-	turning_data.sensor_data.exposure_time_max = 1313;
-	turning_data.sensor_data.exposure_time_min = 1;
-	turning_data.sensor_data.analog_gain_max = 255;
-	turning_data.sensor_data.digital_gain_max = 0;
+	imx477_common_data_init(sensor_info, &turning_data);
+	imx477_param_init(sensor_info, &turning_data);
 
 	//sensor bit && bayer
 	sensor_data_bayer_fill(&turning_data.sensor_data, 12, (uint32_t)BAYER_START_R, (uint32_t)BAYER_PATTERN_RGGB);
@@ -271,77 +256,38 @@ static int imx477_linear_data_init_1920x1080(sensor_info_t *sensor_info)
 	return ret;
 }
 
-static int imx477_linear_data_init_3000x4000(sensor_info_t *sensor_info)
+void imx477_common_data_init(sensor_info_t *sensor_info, sensor_turning_data_t *turning_data)
 {
-	int ret = RET_OK;
-	uint32_t  open_cnt = 0;
-	sensor_turning_data_t turning_data;
-	uint32_t *stream_on = turning_data.stream_ctrl.stream_on;
-	uint32_t *stream_off = turning_data.stream_ctrl.stream_off;
-
-	memset(&turning_data, 0, sizeof(sensor_turning_data_t));
-
 	// common data
-	turning_data.bus_num = sensor_info->bus_num;
-	turning_data.bus_type = sensor_info->bus_type;
-	turning_data.port = sensor_info->port;
-	turning_data.reg_width = sensor_info->reg_width;
-	turning_data.mode = sensor_info->sensor_mode;
-	turning_data.sensor_addr = sensor_info->sensor_addr;
-	strncpy(turning_data.sensor_name, sensor_info->sensor_name,
-		sizeof(turning_data.sensor_name));
+	turning_data->bus_num = sensor_info->bus_num;
+	turning_data->bus_type = sensor_info->bus_type;
+	turning_data->port = sensor_info->port;
+	turning_data->reg_width = sensor_info->reg_width;
+	turning_data->mode = sensor_info->sensor_mode;
+	turning_data->sensor_addr = sensor_info->sensor_addr;
+	strncpy(turning_data->sensor_name, sensor_info->sensor_name,
+			sizeof(turning_data->sensor_name));
+}
 
-	turning_data.sensor_data.active_width = 3000;
-	turning_data.sensor_data.active_height = 4000;
+void imx477_param_init(sensor_info_t *sensor_info, sensor_turning_data_t *turning_data)
+{
 
-	turning_data.sensor_data.lines_per_second = 25840;
-	turning_data.sensor_data.exposure_time_max = 852;
-	turning_data.sensor_data.exposure_time_min = 1;
-	turning_data.sensor_data.analog_gain_max = 143;
-	turning_data.sensor_data.digital_gain_max = 0;
-
-	//sensor bit && bayer
-	sensor_data_bayer_fill(&turning_data.sensor_data, 12, (uint32_t)BAYER_START_B, (uint32_t)BAYER_PATTERN_RGGB);
-	// sensor exposure_max_bit, maybe not used ?  //FIXME
-	sensor_data_bits_fill(&turning_data.sensor_data, 12);
-
-	//some stress test case, we need kernel stream_ctrl.
-	turning_data.stream_ctrl.data_length = 1;
-
-	if(sizeof(turning_data.stream_ctrl.stream_on) >= sizeof(imx477_stream_on_setting)) {
-		memcpy(stream_on, imx477_stream_on_setting, sizeof(imx477_stream_on_setting));
-	} else {
-		vin_err("Number of registers on stream over 10\n");
-		return -RET_ERROR;
-	}
-	if(sizeof(turning_data.stream_ctrl.stream_off) >= sizeof(imx477_stream_off_setting)) {
-		memcpy(stream_off, imx477_stream_off_setting, sizeof(imx477_stream_off_setting));
-	} else {
-		vin_err("Number of registers on stream over 10\n");
-		return -RET_ERROR;
-	}
-
-	// sync gain lut to kernel driver.
-	turning_data.normal.again_lut = malloc(256 * sizeof(uint32_t));
-	if (turning_data.normal.again_lut != NULL) {
-		memset(turning_data.normal.again_lut, 0xff, 256 * sizeof(uint32_t));
-		memcpy(turning_data.normal.again_lut, imx477_gain_lut,
-			sizeof(imx477_gain_lut));
-	}
-
-	ret = ioctl(sensor_info->sen_devfd, SENSOR_TURNING_PARAM, &turning_data);
-
-	if (turning_data.normal.again_lut) {
-		free(turning_data.normal.again_lut);
-		turning_data.normal.again_lut = NULL;
-	}
-
-	if (ret < 0) {
-		vin_err("%s sync gain lut ioctl fail %d\n", sensor_info->sensor_name, ret);
-		return -RET_ERROR;
-	}
-
-	return ret;
+	int vts_hi = hb_vin_i2c_read_reg16_data8(sensor_info->bus_num, sensor_info->sensor_addr, IMX477_FRM_LENGTH_HI);
+	int vts_lo = hb_vin_i2c_read_reg16_data8(sensor_info->bus_num, sensor_info->sensor_addr, IMX477_FRM_LENGTH_LO);
+	uint32_t vts = vts_hi;
+	vts = vts << 8 | vts_lo;
+	pr_info("IMX477: vts_hi:0x%x,vts_lo:0x%x,vts:0x%x\n", vts_hi, vts_lo, vts);
+	turning_data->sensor_data.active_width = sensor_info->width;
+	turning_data->sensor_data.active_height = sensor_info->height;
+	// turning sensor_data
+	turning_data->sensor_data.conversion = 1;
+	turning_data->sensor_data.turning_type = 6;
+	turning_data->sensor_data.lines_per_second = vts * sensor_info->fps;
+	turning_data->sensor_data.exposure_time_max = vts;
+	turning_data->sensor_data.exposure_time_long_max = vts;
+	turning_data->sensor_data.analog_gain_max = 255;
+	turning_data->sensor_data.digital_gain_max = 0;
+	turning_data->sensor_data.exposure_time_min = 1;
 }
 
 static int sensor_aexp_gain_control(hal_control_info_t *info, uint32_t mode, uint32_t *again, uint32_t *dgain, uint32_t gain_num)

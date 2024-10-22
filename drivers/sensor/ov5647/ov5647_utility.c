@@ -102,9 +102,51 @@ int sensor_init(sensor_info_t *sensor_info)
                                          __LINE__, sensor_info->sensor_name);
                         return ret;
                 }
-        } else {
-                pr_err("config mode is err\n");
-                return -RET_ERROR;
+        }
+        if (sensor_info->resolution == 480) {
+                printf("ov5647 resolution is 480p \n");
+                setting_size =
+                        sizeof(ov5647_2lane_480p_init_setting) / sizeof(uint32_t) / 2;
+                pr_debug("%s write 480p setting, size = %d\n",
+                                 sensor_info->sensor_name, setting_size);
+                ret = vin_write_array(sensor_info->bus_num,
+                                        sensor_info->sensor_addr, 2,
+                                        setting_size, ov5647_2lane_480p_init_setting);
+                if (ret < 0) {
+                        pr_err("%d : init %s fail\n",
+                                         __LINE__, sensor_info->sensor_name);
+                        return ret;
+                }
+        }
+        if (sensor_info->resolution == 960) {
+                printf("ov5647 resolution is 960p \n");
+                setting_size =
+                        sizeof(ov5647_2lane_960p_init_setting) / sizeof(uint32_t) / 2;
+                pr_debug("%s write 960p setting, size = %d\n",
+                                 sensor_info->sensor_name, setting_size);
+                ret = vin_write_array(sensor_info->bus_num,
+                                        sensor_info->sensor_addr, 2,
+                                        setting_size, ov5647_2lane_960p_init_setting);
+                if (ret < 0) {
+                        pr_err("%d : init %s fail\n",
+                                         __LINE__, sensor_info->sensor_name);
+                        return ret;
+                }
+        }
+        if (sensor_info->resolution == 1944) {
+                printf("ov5647 resolution is 1944 \n");
+                setting_size =
+                        sizeof(ov5647_2lane_1944p_init_setting) / sizeof(uint32_t) / 2;
+                pr_debug("%s write 1944p setting, size = %d\n",
+                                 sensor_info->sensor_name, setting_size);
+                ret = vin_write_array(sensor_info->bus_num,
+                                        sensor_info->sensor_addr, 2,
+                                        setting_size, ov5647_2lane_1944p_init_setting);
+                if (ret < 0) {
+                        pr_err("%d : init %s fail\n",
+                                         __LINE__, sensor_info->sensor_name);
+                        return ret;
+                }
         }
 
         ret = ov5647_linear_data_init(sensor_info);
