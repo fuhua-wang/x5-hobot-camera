@@ -108,6 +108,7 @@ SO_OBJS = $(patsubst ./%,${BUILD_OUTPUT_PATH}/%,$(SO_SRCS:.c=.o))
 # builid params
 INCS := -I../../inc/legacy/inc -I../../inc/legacy/utility -I../../inc/legacy/utility/sensor $(INCS)
 INCS := -I. -I../../inc  -I../../inc/private -I../../inc/develop -I../../inc/legacy $(INCS)
+INCS := -I../../../include $(INCS)
 
 CFLAGS += -fPIC
 LIBS += -lcam -lpthread -lm -lrt
