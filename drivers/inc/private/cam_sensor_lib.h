@@ -39,7 +39,7 @@ extern "C" {
 #define CAM_SENSOR_CHECK_WIDTH_MIN	(0)
 #define CAM_SENSOR_CHECK_WIDTH_MAX	(8192)
 #define CAM_SENSOR_CHECK_HEIGHT_MIN	(0)
-#define CAM_SENSOR_CHECK_HEIGHT_MAX	(4096)
+#define CAM_SENSOR_CHECK_HEIGHT_MAX	(8192)
 
 #define CAM_SENSOR_CALIB_STRING_INVALID	"NULL"
 #define CAM_SENSOR_CALIB_LNAME_DISABLE	"disable"
@@ -63,6 +63,7 @@ extern int32_t camera_sensor_stop(sensor_info_t *sen_if);
 extern int32_t camera_sensor_reset(sensor_info_t *sen_if, int32_t do_stop);
 extern int32_t camera_sensor_dynamic_switch_fps(sensor_info_t *sen_if, int32_t fps);
 extern int32_t camera_sensor_read_register(sensor_info_t *sen_if, camera_reg_type_t type, uint32_t reg_addr);
+extern int32_t camera_sensor_write_register(sensor_info_t *sen_if, camera_reg_type_t type, uint32_t reg_addr, uint32_t value);
 extern int32_t camera_sensor_parse_embed_data(sensor_info_t *sen_if, char* embed_raw, struct embed_data_info_s *embed_info);
 extern int32_t camera_sensor_update_ae_info(sensor_info_t *sen_if, camera_ae_info_t *ae_info);
 extern int32_t camera_sensor_set_sensor_info_to_driver(sensor_info_t *sen_if);
