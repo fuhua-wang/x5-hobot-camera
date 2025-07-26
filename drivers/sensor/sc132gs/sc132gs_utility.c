@@ -1,22 +1,18 @@
-// Copyright (c) 2024，D-Robotics.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 /***************************************************************************
- * COPYRIGHT NOTICE
- * Copyright 2023 Horizon Robotics.
- * All rights reserved.
- ***************************************************************************/
+*  Copyright (c) 2024，D-Robotics.
+*
+*  Licensed under the Apache License, Version 2.0 (the "License");
+*  you may not use this file except in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License.
+***************************************************************************/
 #define pr_fmt(fmt)             "[sc132gs]:" fmt
 
 #include <stdio.h>
@@ -156,6 +152,8 @@ int sc132gs_linear_data_init_1088x1280(sensor_info_t *sensor_info)
 	turning_data.port = sensor_info->port;
 	turning_data.reg_width = sensor_info->reg_width;
 	turning_data.mode = sensor_info->sensor_mode;
+	if (sensor_info->sensor_mode == SLAVE_M)
+		turning_data.mode = NORMAL_M;
 	turning_data.sensor_addr = sensor_info->sensor_addr;
 	strncpy(turning_data.sensor_name, sensor_info->sensor_name,
 		sizeof(turning_data.sensor_name));
@@ -165,15 +163,19 @@ int sc132gs_linear_data_init_1088x1280(sensor_info_t *sensor_info)
 	// If trigger is enabled, the configuration before trigger will still be used.
 	turning_data.sensor_data.lines_per_second = 84000;
 	// form customer, exposure time max = 10ms
-	turning_data.sensor_data.exposure_time_max = 840;
+	turning_data.sensor_data.exposure_time_max = 2560;
 
 	turning_data.sensor_data.active_width = 1088;
 	turning_data.sensor_data.active_height = 1280;
-	turning_data.sensor_data.analog_gain_max = 63;		//154
+	turning_data.sensor_data.analog_gain_max = 128;		//154
 	turning_data.sensor_data.digital_gain_max = 0;   //159
-	turning_data.sensor_data.exposure_time_min = 8;
+	turning_data.sensor_data.exposure_time_min = 1;
 	// No setting is required in linear mode
 	turning_data.sensor_data.exposure_time_long_max = 4000;
+	turning_data.sensor_data.analog_gain_init = 62;
+	turning_data.sensor_data.digital_gain_init = 0;
+	turning_data.sensor_data.exposure_time_init = 840;
+	// turning_data.sensor_data.delta_time = 2;
 
 	// raw10
 	sensor_data_bayer_fill(&turning_data.sensor_data, 10, (uint32_t)BAYER_START_B, (uint32_t)BAYER_PATTERN_RGGB);
@@ -419,8 +421,8 @@ int sensor_init(sensor_info_t *sensor_info)
 		switch(sensor_info->sensor_mode) {
 		case NORMAL_M:	  // 1: normal
 			vin_info("sc132gs in normal mode\n");
-			setting_size = sizeof(sc132gs_linear_init_896x896_10fps_setting) / sizeof(uint32_t) / 2;
-			ret = sensor_configure(sensor_info, sc132gs_linear_init_896x896_10fps_setting, setting_size);
+			setting_size = sizeof(sc132gs_linear_init_896x896_10fps_setting_master) / sizeof(uint32_t) / 2;
+			ret = sensor_configure(sensor_info, sc132gs_linear_init_896x896_10fps_setting_master, setting_size);
 			if (ret < 0) {
 				vin_err("%d : init %s fail\n", __LINE__, sensor_info->sensor_name);
 				return ret;
@@ -445,6 +447,20 @@ int sensor_init(sensor_info_t *sensor_info)
 				return ret;
 			}
 			break;
+		case SLAVE_M:	  // 6: slave
+			vin_info("sc132gs in slave mode\n");
+			setting_size = sizeof(sc132gs_linear_init_896x896_10fps_setting_slave) / sizeof(uint32_t) / 2;
+			ret = sensor_configure(sensor_info, sc132gs_linear_init_896x896_10fps_setting_slave, setting_size);
+			if (ret < 0) {
+				vin_err("%d : init %s fail\n", __LINE__, sensor_info->sensor_name);
+				return ret;
+			}
+			ret = sc132gs_linear_data_init_896x896(sensor_info);
+			if (ret < 0) {
+				vin_err("%d : linear data init %s fail\n", __LINE__, sensor_info->sensor_name);
+				return ret;
+			}
+			break;
 		default:
 			vin_err("not support mode %d\n", sensor_info->sensor_mode);
 			ret = -RET_ERROR;
@@ -454,8 +470,22 @@ int sensor_init(sensor_info_t *sensor_info)
 		switch(sensor_info->sensor_mode) {
 		case NORMAL_M:	  // 1: normal
 			vin_info("sc132gs in normal mode\n");
-			setting_size = sizeof(sc132gs_linear_init_1088x1280_30fps_setting) / sizeof(uint32_t) / 2;
-			ret = sensor_configure(sensor_info, sc132gs_linear_init_1088x1280_30fps_setting, setting_size);
+			setting_size = sizeof(sc132gs_linear_init_1088x1280_30fps_setting_master) / sizeof(uint32_t) / 2;
+			ret = sensor_configure(sensor_info, sc132gs_linear_init_1088x1280_30fps_setting_master, setting_size);
+			if (ret < 0) {
+				vin_err("%d : init %s fail\n", __LINE__, sensor_info->sensor_name);
+				return ret;
+			}
+			ret = sc132gs_linear_data_init_1088x1280(sensor_info);
+			if (ret < 0) {
+				vin_err("%d : linear data init %s fail\n", __LINE__, sensor_info->sensor_name);
+				return ret;
+			}
+			break;
+		case SLAVE_M:	  // 6: slave
+			vin_info("sc132gs in slave mode\n");
+			setting_size = sizeof(sc132gs_linear_init_1088x1280_30fps_setting_slave) / sizeof(uint32_t) / 2;
+			ret = sensor_configure(sensor_info, sc132gs_linear_init_1088x1280_30fps_setting_slave, setting_size);
 			if (ret < 0) {
 				vin_err("%d : init %s fail\n", __LINE__, sensor_info->sensor_name);
 				return ret;
@@ -471,7 +501,7 @@ int sensor_init(sensor_info_t *sensor_info)
 			ret = -RET_ERROR;
 			break;
 		}
-	} 
+	}
 	vin_info("sc132gs config success under %d mode\n\n", sensor_info->sensor_mode);
 
 	return ret;
@@ -503,7 +533,21 @@ int sensor_start(sensor_info_t *sensor_info)
 				return ret;
 		}
 		break;
-	}
+	case SLAVE_M:
+		setting_size = sizeof(sc132gs_stream_on_setting)/sizeof(uint32_t)/2;
+		vin_err("start steam on slave mode, sensor_name %s, setting_size = %d\n", sensor_info->sensor_name, setting_size);
+		ret = vin_write_array(sensor_info->bus_num, sensor_info->sensor_addr, 2,
+				setting_size, sc132gs_stream_on_setting);
+		if(ret < 0) {
+				vin_err("start %s fail\n", sensor_info->sensor_name);
+				return ret;
+		}
+		break;
+	default:
+		vin_err("not support mode %d\n", sensor_info->sensor_mode);
+		ret = -RET_ERROR;
+		break;
+    }
 
 	return ret;
 }
@@ -606,8 +650,8 @@ static int sc132gs_ae_set(uint32_t bus, uint32_t addr, uint32_t line)
 	 * NOTICE: trigger mode: sline = line(from isp)
 	 * from customer, exposure time max is 10ms，sline = exposure_time_max = 420
 	 */
-	if (sline >= 840)
-		sline = 840;
+	if (sline >= 2560)
+		sline = 2560;
 
 	temp0 = (sline & 0xF000) >> 12;
 	temp1 = (sline & 0xFF0) >> 4;
@@ -625,21 +669,7 @@ static int sc132gs_ae_set(uint32_t bus, uint32_t addr, uint32_t line)
 }
 
 #define SAMPLECNT 8
-static uint32_t sc132gs_line_agv(uint32_t line)
-{
-	uint32_t average, i;
-	uint64_t sum = 0;
-	static uint32_t sample_ae[SAMPLECNT];
-	static uint32_t index = 0;
-	sample_ae[index++] = line;
-	if (index == SAMPLECNT)
-		index = 0;
-	for (i = 0; i < SAMPLECNT; i++)
-		sum += sample_ae[i];
 
-	average = sum / SAMPLECNT;
-	return average;
-}
 static int sensor_aexp_line_control(hal_control_info_t *info, uint32_t mode, uint32_t *line, uint32_t line_num)
 {
 #ifdef AE_DBG
@@ -649,7 +679,7 @@ static int sensor_aexp_line_control(hal_control_info_t *info, uint32_t mode, uin
 
 
 	if (mode == NORMAL_M) {
-		val = sc132gs_line_agv(line[0]);
+		val = line[0];
 		sc132gs_ae_set(info->bus_num, info->sensor_addr, val);
 	} else if (mode == DOL2_M) {
 		//todo
